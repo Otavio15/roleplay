@@ -114,7 +114,7 @@ test.group('User', (group) => {
     assert.equal(body.user.id, id)
   })
 
-  test.only('It should update the password of the user', async (assert) => {
+  test('It should update the password of the user', async (assert) => {
     const user = await UserFactory.create()
     const password = 'test'
 
@@ -131,6 +131,55 @@ test.group('User', (group) => {
     assert.equal(body.user.id, user.id)
     await user.refresh()
     assert.isTrue(await Hash.verify(user.password, password))
+  })
+
+  test('it should return 422 when required data is not provided', async (assert) => {
+    const { id } = await UserFactory.create()
+    const { body } = await supertest(BASE_URL).put(`/users/${id}`).send({}).expect(422)
+    assert.equal(body.code, 'BAD_REQUEST')
+    assert.equal(body.status, 422)
+  })
+
+  test('it should return 422 when providing an invalid email', async (assert) => {
+    const { id, password, avatar } = await UserFactory.create()
+    const { body } = await supertest(BASE_URL)
+      .put(`/users/${id}`)
+      .send({
+        email: 'teste@',
+        password: password,
+        avatar: avatar,
+      })
+      .expect(422)
+    assert.equal(body.code, 'BAD_REQUEST')
+    assert.equal(body.status, 422)
+  })
+
+  test('it should return 422 when providing an invalid password', async (assert) => {
+    const { id, email, avatar } = await UserFactory.create()
+    const { body } = await supertest(BASE_URL)
+      .put(`/users/${id}`)
+      .send({
+        email: email,
+        password: '12',
+        avatar: avatar,
+      })
+      .expect(422)
+    assert.equal(body.code, 'BAD_REQUEST')
+    assert.equal(body.status, 422)
+  })
+
+  test('it should return 422 when providing an invalid avatar', async (assert) => {
+    const { id, email, password } = await UserFactory.create()
+    const { body } = await supertest(BASE_URL)
+      .put(`/users/${id}`)
+      .send({
+        email: email,
+        password: password,
+        avatar: 'ee.',
+      })
+      .expect(422)
+    assert.equal(body.code, 'BAD_REQUEST')
+    assert.equal(body.status, 422)
   })
 
   group.beforeEach(async () => {
