@@ -1,3 +1,4 @@
+import User from 'App/Models/User'
 import Hash from '@ioc:Adonis/Core/Hash'
 import { UserFactory } from './../../database/factories/index'
 import test from 'japa'
@@ -8,6 +9,7 @@ import { Assert } from 'japa/build/src/Assert'
 const BASE_URL = `http://${process.env.HOST}:${process.env.PORT}`
 
 let token = ''
+let user = {} as User
 
 test.group('User', (group) => {
   test('It should create an user', async (assert) => {
@@ -97,28 +99,26 @@ test.group('User', (group) => {
   })
 
   test('It should update an user', async (assert) => {
-    const { id, password } = await UserFactory.create()
     const email = 'test@test.com'
     const avatar = 'http://github.com/otavio15'
 
     const { body } = await supertest(BASE_URL)
-      .put(`/users/${id}`)
+      .put(`/users/${user.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send({
         email: email,
         avatar: avatar,
-        password: password,
+        password: user.password,
       })
       .expect(200)
 
     assert.exists(body.user, 'User undefined')
     assert.equal(body.user.email, email)
     assert.equal(body.user.avatar, avatar)
-    assert.equal(body.user.id, id)
+    assert.equal(body.user.id, user.id)
   })
 
   test('It should update the password of the user', async (assert) => {
-    const user = await UserFactory.create()
     const password = 'test'
 
     const { body } = await supertest(BASE_URL)
@@ -195,16 +195,21 @@ test.group('User', (group) => {
 
   group.before(async () => {
     const plainPassword = 'test'
-    const { email } = await UserFactory.merge({ password: plainPassword }).create()
+    const newuser = await UserFactory.merge({ password: plainPassword }).create()
     const { body } = await supertest(BASE_URL)
       .post('/sessions')
       .send({
-        email,
+        email: newuser.email,
         password: plainPassword,
       })
       .expect(201)
 
     token = body.token.token
+    user = newuser
+  })
+
+  group.after(async () => {
+    await supertest(BASE_URL).delete('/sessions').set('Authorization', `Bearer ${token}`)
   })
 
   group.beforeEach(async () => {
