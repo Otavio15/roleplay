@@ -1,3 +1,4 @@
+import GroupRequest from 'App/Models/GroupRequest'
 /**
  * Contract source: https://git.io/Jte3T
  *
@@ -33,6 +34,12 @@ import User from 'App/Models/User'
 export const { actions } = Bouncer.define('updatedUser', (user: User, updatedUser: User) => {
   return user.id === updatedUser.id
 })
+  .define('acceptGroupRequest', (user: User, groupRequest: GroupRequest) => {
+    return user.id === groupRequest.group.master
+  })
+  .define('rejectGroupRequest', (user: User, groupRequest: GroupRequest) => {
+    return user.id === groupRequest.group.master
+  })
 
 /*
 |--------------------------------------------------------------------------
